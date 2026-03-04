@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
-import { CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
+import { CheckCircle2, XCircle, AlertCircle, Loader2, ScanLine } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const ScannerPage = () => {
@@ -75,33 +75,57 @@ const ScannerPage = () => {
         }
     };
 
+    const [isStarted, setIsStarted] = useState(false);
+
     useEffect(() => {
-        if (status !== 'idle') return;
+        const html5QrCode = new Html5Qrcode("reader");
 
-        const scanner = new Html5QrcodeScanner(
-            "reader",
-            { fps: 10, qrbox: { width: 250, height: 250 } },
-            false
-        );
+        const startScanner = async () => {
+            if (!isStarted || status !== 'idle') return;
 
-        scanner.render(
-            (decodedText) => {
-                scanner.clear();
-                handleScan(decodedText);
-            },
-            (_error) => {
-                // Ignore silent background errors
+            try {
+                await html5QrCode.start(
+                    { facingMode: "environment" },
+                    {
+                        fps: 10,
+                        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+                            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                            const edgeSize = Math.floor(minEdge * 0.7);
+                            return { width: edgeSize, height: edgeSize };
+                        }
+                    },
+                    (decodedText: string) => {
+                        html5QrCode.stop().then(() => {
+                            setIsStarted(false);
+                            handleScan(decodedText);
+                        }).catch((err: any) => console.error(err));
+                    },
+                    (_error: any) => {
+                        // Silent background scanning
+                    }
+                );
+            } catch (err) {
+                console.error("Unable to start scanning", err);
+                setErrorMessage("Camera access denied or already in use.");
+                setStatus('error');
             }
-        );
+        };
+
+        if (isStarted && status === 'idle') {
+            startScanner();
+        }
 
         return () => {
-            scanner.clear().catch(e => console.error(e));
+            if (html5QrCode.isScanning) {
+                html5QrCode.stop().catch(err => console.error("Error stopping scanner", err));
+            }
         };
-    }, [status]);
+    }, [isStarted, status]);
 
     const resetScanner = () => {
         setGuestData(null);
         setStatus('idle');
+        setIsStarted(false);
     };
 
     return (
@@ -109,16 +133,43 @@ const ScannerPage = () => {
 
             {status === 'idle' && (
                 <div className="w-full max-w-sm">
-                    <div className="text-center mb-6">
+                    <div className="text-center mb-6 px-4">
                         <h2 className="text-2xl font-bold text-slate-900 mb-2">QR Scanner</h2>
-                        <p className="text-slate-500 text-sm">Scan digital pass at entrance</p>
+                        <p className="text-slate-500 text-sm">Aim your camera at the guest's digital pass</p>
                     </div>
 
-                    <div className="bg-white p-4 rounded-3xl shadow-lg border border-slate-100 overflow-hidden relative">
-                        <div id="reader" className="w-full h-full rounded-2xl overflow-hidden [&_video]:rounded-xl [&_#reader__dashboard_section_csr]:hidden bg-slate-900 min-h-[250px] flex items-center justify-center">
-                            {/* html5-qrcode injects UI here */}
+                    <div className="bg-white p-4 rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden relative mx-4">
+                        <div
+                            id="reader"
+                            className={`w-full aspect-square rounded-3xl overflow-hidden bg-slate-900 flex items-center justify-center transition-all ${isStarted ? 'opacity-100' : 'opacity-40'}`}
+                        >
+                            {!isStarted && (
+                                <ScanLine className="w-12 h-12 text-slate-600 animate-pulse" />
+                            )}
                         </div>
+
+                        {!isStarted && (
+                            <div className="absolute inset-0 flex items-center justify-center p-8">
+                                <button
+                                    onClick={() => setIsStarted(true)}
+                                    className="w-full bg-primary-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary-500/30 active:scale-95 transition-all text-sm uppercase tracking-widest"
+                                >
+                                    Enable Camera
+                                </button>
+                            </div>
+                        )}
                     </div>
+
+                    {isStarted && (
+                        <div className="mt-8 text-center px-6">
+                            <button
+                                onClick={() => setIsStarted(false)}
+                                className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
+                            >
+                                Stop Scanning
+                            </button>
+                        </div>
+                    )}
                 </div>
             )}
 
