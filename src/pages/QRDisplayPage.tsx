@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { Calendar, MapPin, Users, UtensilsCrossed, ArrowLeft, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Users, UtensilsCrossed, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
 const QRDisplayPage = () => {

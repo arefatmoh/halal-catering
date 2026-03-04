@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const ScannerPage = () => {
-    const [scanResult, setScanResult] = useState<string | null>(null);
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'duplicate'>('idle');
     const [guestData, setGuestData] = useState<any>(null);
     const [errorMessage, setErrorMessage] = useState('');
@@ -28,7 +27,6 @@ const ScannerPage = () => {
             return;
         }
 
-        setScanResult(token);
         setStatus('loading');
 
         try {
@@ -91,7 +89,7 @@ const ScannerPage = () => {
                 scanner.clear();
                 handleScan(decodedText);
             },
-            (error) => {
+            (_error) => {
                 // Ignore silent background errors
             }
         );
@@ -102,7 +100,6 @@ const ScannerPage = () => {
     }, [status]);
 
     const resetScanner = () => {
-        setScanResult(null);
         setGuestData(null);
         setStatus('idle');
     };

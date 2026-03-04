@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { BarChart3, TrendingUp, PieChart, Users, Calendar, ArrowRight, Loader2, Download } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BarChart3, TrendingUp, PieChart, Users, Loader2, Download } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
 const AnalyticsPage = () => {

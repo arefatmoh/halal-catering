@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Eye, Check, X, Search, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { sendSMS } from '../../lib/sms';
@@ -72,7 +72,7 @@ const RegistrationsPage = () => {
                 ? Math.max(...tables.map(t => t.table_number)) + 1
                 : 1;
 
-            const { data: newTableData, error: insertError } = await supabase
+            const { error: insertError } = await supabase
                 .from('tables')
                 .insert([{ table_number: nextTableNum, capacity: 6, occupied_seats: guestCount }])
                 .select()
