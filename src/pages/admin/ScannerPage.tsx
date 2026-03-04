@@ -75,7 +75,14 @@ const ScannerPage = () => {
         }
     };
 
-    const [isStarted, setIsStarted] = useState(false);
+    const [isStarted, setIsStarted] = useState(() => {
+        return localStorage.getItem('scanner_enabled') === 'true';
+    });
+
+    const toggleScanner = (val: boolean) => {
+        setIsStarted(val);
+        localStorage.setItem('scanner_enabled', val ? 'true' : 'false');
+    };
 
     useEffect(() => {
         let html5QrCode: Html5Qrcode | null = null;
@@ -102,7 +109,7 @@ const ScannerPage = () => {
                     (decodedText: string) => {
                         if (html5QrCode) {
                             html5QrCode.stop().then(() => {
-                                setIsStarted(false);
+                                // Keep isStarted true so it resumes on next idle
                                 handleScan(decodedText);
                             }).catch((err: any) => console.error(err));
                         }
@@ -132,7 +139,7 @@ const ScannerPage = () => {
     const resetScanner = () => {
         setGuestData(null);
         setStatus('idle');
-        setIsStarted(false);
+        // Do NOT set isStarted to false here, so it auto-starts if enabled
     };
 
     return (
@@ -158,7 +165,7 @@ const ScannerPage = () => {
                         {!isStarted && (
                             <div className="absolute inset-0 flex items-center justify-center p-8">
                                 <button
-                                    onClick={() => setIsStarted(true)}
+                                    onClick={() => toggleScanner(true)}
                                     className="w-full bg-primary-600 text-white font-bold py-4 rounded-2xl shadow-xl shadow-primary-500/30 active:scale-95 transition-all text-sm uppercase tracking-widest"
                                 >
                                     Enable Camera
@@ -170,7 +177,7 @@ const ScannerPage = () => {
                     {isStarted && (
                         <div className="mt-8 text-center px-6">
                             <button
-                                onClick={() => setIsStarted(false)}
+                                onClick={() => toggleScanner(false)}
                                 className="text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-slate-600 transition-colors"
                             >
                                 Stop Scanning
