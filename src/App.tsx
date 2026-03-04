@@ -11,6 +11,7 @@ import DashboardPage from './pages/admin/DashboardPage';
 import RegistrationsPage from './pages/admin/RegistrationsPage';
 import ScannerPage from './pages/admin/ScannerPage';
 import TablesPage from './pages/admin/TablesPage';
+import AnalyticsPage from './pages/admin/AnalyticsPage';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="registrations" element={<RegistrationsPage />} />
             <Route path="scanner" element={<ScannerPage />} />
             <Route path="tables" element={<TablesPage />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
           </Route>
         </Routes>
       </div>

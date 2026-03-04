@@ -29,9 +29,16 @@ const RegistrationsPage = () => {
 
     const fetchRegistrations = async () => {
         try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
             const { data, error } = await supabase
                 .from('registrations')
                 .select('*')
+                .gte('created_at', today.toISOString())
+                .lt('created_at', tomorrow.toISOString())
                 .order('created_at', { ascending: false });
 
             if (error) throw error;

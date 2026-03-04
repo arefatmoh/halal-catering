@@ -35,7 +35,7 @@ const AdminLayout = () => {
             </main>
 
             {/* Bottom Navigation (Mobile First) */}
-            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe pt-2 px-2 flex justify-around items-center z-50 rounded-t-[2rem] shadow-[0_-8px_30px_-10px_rgba(0,0,0,0.1)] md:sticky md:mt-auto md:max-w-lg md:mx-auto md:rounded-b-[2rem] h-20">
+            <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe pt-2 px-2 flex justify-between items-center z-50 rounded-t-[2rem] shadow-[0_-8px_30px_-10px_rgba(0,0,0,0.1)] md:sticky md:mt-auto md:max-w-lg md:mx-auto md:rounded-b-[2rem] h-20">
                 <NavLink
                     to="/admin/dashboard"
                     className={({ isActive }) =>
@@ -53,7 +53,7 @@ const AdminLayout = () => {
                     }
                 >
                     <Users className="w-6 h-6" />
-                    <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">Rsvp</span>
+                    <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">Daily</span>
                 </NavLink>
 
                 <NavLink
@@ -77,13 +77,15 @@ const AdminLayout = () => {
                     <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">Tables</span>
                 </NavLink>
 
-                <button
-                    onClick={handleLogout}
-                    className="flex flex-col items-center justify-center w-16 h-16 text-slate-400 hover:text-red-500 transition-all"
+                <NavLink
+                    to="/admin/analytics"
+                    className={({ isActive }) =>
+                        `flex flex-col items-center justify-center w-16 h-16 rounded-2xl transition-all ${isActive ? 'text-primary-600 bg-primary-50' : 'text-slate-400 hover:text-slate-600'}`
+                    }
                 >
-                    <LogOut className="w-6 h-6" />
-                    <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">Exit</span>
-                </button>
+                    <LayoutDashboard className="w-6 h-6 rotate-90" />
+                    <span className="text-[10px] font-bold mt-1 uppercase tracking-tighter">Reports</span>
+                </NavLink>
             </nav>
         </div>
     );
