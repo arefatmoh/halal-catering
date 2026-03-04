@@ -78,12 +78,17 @@ const ScannerPage = () => {
     const [isStarted, setIsStarted] = useState(false);
 
     useEffect(() => {
-        const html5QrCode = new Html5Qrcode("reader");
+        let html5QrCode: Html5Qrcode | null = null;
 
         const startScanner = async () => {
             if (!isStarted || status !== 'idle') return;
 
+            // Ensure the element exists before creating the instance
+            const element = document.getElementById("reader");
+            if (!element) return;
+
             try {
+                html5QrCode = new Html5Qrcode("reader");
                 await html5QrCode.start(
                     { facingMode: "environment" },
                     {
@@ -95,10 +100,12 @@ const ScannerPage = () => {
                         }
                     },
                     (decodedText: string) => {
-                        html5QrCode.stop().then(() => {
-                            setIsStarted(false);
-                            handleScan(decodedText);
-                        }).catch((err: any) => console.error(err));
+                        if (html5QrCode) {
+                            html5QrCode.stop().then(() => {
+                                setIsStarted(false);
+                                handleScan(decodedText);
+                            }).catch((err: any) => console.error(err));
+                        }
                     },
                     (_error: any) => {
                         // Silent background scanning
@@ -116,7 +123,7 @@ const ScannerPage = () => {
         }
 
         return () => {
-            if (html5QrCode.isScanning) {
+            if (html5QrCode && html5QrCode.isScanning) {
                 html5QrCode.stop().catch(err => console.error("Error stopping scanner", err));
             }
         };
