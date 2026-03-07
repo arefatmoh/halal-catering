@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { QRCodeCanvas } from 'qrcode.react';
+import QRCode from 'qrcode';
 import { Calendar, MapPin, Users, UtensilsCrossed, Loader2, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import { supabase } from '../lib/supabase';
@@ -11,6 +11,7 @@ const QRDisplayPage = () => {
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [downloading, setDownloading] = useState(false);
+    const [qrImage, setQrImage] = useState<string>('');
 
     const downloadPass = async () => {
         const cardElement = document.getElementById('ticket-card');
@@ -55,6 +56,19 @@ const QRDisplayPage = () => {
         };
 
         fetchPass();
+    }, [token]);
+
+    useEffect(() => {
+        if (token) {
+            QRCode.toDataURL(token, {
+                width: 200,
+                margin: 0,
+                color: {
+                    dark: '#000000',
+                    light: '#ffffff'
+                }
+            }).then(setQrImage).catch(console.error);
+        }
     }, [token]);
 
     if (loading) {
@@ -140,14 +154,12 @@ const QRDisplayPage = () => {
                     </div>
 
                     {/* QR Code Container */}
-                    <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 mb-8 inline-block shadow-inner">
-                        <QRCodeCanvas
-                            value={token || ''}
-                            size={200}
-                            level="H"
-                            includeMargin={false}
-                            className="rounded-lg"
-                        />
+                    <div className="bg-slate-50 p-6 rounded-[2rem] border border-slate-100 mb-8 inline-block shadow-inner min-w-[200px] min-h-[200px] flex items-center justify-center">
+                        {qrImage ? (
+                            <img src={qrImage} alt="QR Code" className="w-[200px] h-[200px] rounded-lg shadow-sm" crossOrigin="anonymous" />
+                        ) : (
+                            <Loader2 className="w-8 h-8 animate-spin text-slate-300" />
+                        )}
                     </div>
 
                     <div className="space-y-4 mb-2">
