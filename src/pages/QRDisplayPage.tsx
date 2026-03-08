@@ -141,9 +141,16 @@ const QRDisplayPage = () => {
                     <h2 className="text-3xl font-black text-slate-900 mb-1 leading-tight">
                         {data.full_name}
                     </h2>
-                    <div className="flex items-center justify-center gap-1.5 text-primary-600 font-bold mb-6">
-                        <Users className="w-4 h-4" />
-                        <span className="text-sm uppercase tracking-widest">{data.guest_count} {data.guest_count > 1 ? 'Guests' : 'Guest'}</span>
+                    <div className="flex flex-col items-center justify-center mb-6">
+                        <div className="flex items-center justify-center gap-1.5 text-primary-600 font-bold">
+                            <Users className="w-4 h-4" />
+                            <span className="text-sm uppercase tracking-widest">{data.guest_count} {data.guest_count > 1 ? 'Guests' : 'Guest'}</span>
+                        </div>
+                        {data.guest_names && data.guest_names.length > 0 && (
+                            <span className="text-[10px] font-bold text-slate-400 mt-0.5 px-4 text-center line-clamp-1">
+                                (+ {data.guest_names.filter((n: string) => n).join(', ')})
+                            </span>
+                        )}
                     </div>
 
                     {/* Dash Line */}
