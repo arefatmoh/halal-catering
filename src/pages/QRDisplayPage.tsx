@@ -205,7 +205,7 @@ const QRDisplayPage = () => {
             {/* The download button was moved to the top */}
 
             <p className="mt-8 text-slate-400 text-xs font-medium">
-                Powered by Halal Catering
+                Powered by BeWide Technologies
             </p>
         </div>
     );

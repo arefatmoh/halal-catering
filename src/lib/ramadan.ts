@@ -21,13 +21,12 @@ export function getRamadanDates(): RamadanDate[] {
         const ramadanDay = RAMADAN_START_DAY + i;
         const isoDate = gregorian.toISOString().split('T')[0]; // "YYYY-MM-DD"
 
-        const monthName = gregorian.toLocaleString('en-US', { month: 'short' });
-        const dayNum = gregorian.getDate();
+        const dayName = gregorian.toLocaleString('en-US', { weekday: 'short' }); // "Sun", "Mon"...
 
         dates.push({
             ramadanDay,
             gregorian,
-            label: `Ramadan ${ramadanDay}  ·  ${monthName} ${dayNum}`,
+            label: `Ramadan ${ramadanDay}  ·  ${dayName}`,
             isoDate,
         });
     }
@@ -42,4 +41,19 @@ export function getTodayRamadanDate(): RamadanDate {
 
     const all = getRamadanDates();
     return all.find(d => d.isoDate === todayIso) ?? all[0];
+}
+
+/** Returns only the daily iftar dates: Ramadan 19-28 */
+export function getDailyIftarDates(): RamadanDate[] {
+    return getRamadanDates().filter(d => d.ramadanDay <= 28);
+}
+
+/** Returns only the grand iftar dates: Ramadan 29-30 */
+export function getGrandIftarDates(): RamadanDate[] {
+    return getRamadanDates().filter(d => d.ramadanDay >= 29);
+}
+
+/** Check if a given ISO date is a Grand Iftar date (R29 or R30) */
+export function isGrandIftarDate(isoDate: string): boolean {
+    return getGrandIftarDates().some(d => d.isoDate === isoDate);
 }

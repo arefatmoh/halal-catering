@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { CheckCircle2, XCircle, AlertCircle, Loader2, ScanLine } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { getRamadanDates, getTodayRamadanDate } from '../../lib/ramadan';
 
 const ScannerPage = () => {
-    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'duplicate'>('idle');
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error' | 'duplicate' | 'wrong_date'>('idle');
     const [guestData, setGuestData] = useState<any>(null);
     const [errorMessage, setErrorMessage] = useState('');
 
@@ -57,7 +58,14 @@ const ScannerPage = () => {
                 return;
             }
 
-            // 3. Mark as entered (increment entered_count to match guest_count for simplicity)
+            // 3. Check Date Matching
+            const todayIso = getTodayRamadanDate().isoDate;
+            if (data.reservation_date && data.reservation_date !== todayIso) {
+                setStatus('wrong_date');
+                return;
+            }
+
+            // 4. Mark as entered (increment entered_count to match guest_count for simplicity)
             // Since they arrive together, we assume all guests for this ticket enter at once
             const { error: updateError } = await supabase
                 .from('registrations')
@@ -230,6 +238,35 @@ const ScannerPage = () => {
                     <div className="bg-orange-50 rounded-2xl p-4 text-left mb-6 text-orange-800">
                         <p className="text-sm font-bold">{guestData.full_name}</p>
                         <p className="text-xs mt-1">Table {guestData.table_number} • {guestData.guest_count} Guests</p>
+                    </div>
+
+                    <button
+                        onClick={resetScanner}
+                        className="w-full bg-slate-100 outline-none text-slate-700 font-bold py-4 rounded-xl hover:bg-slate-200 transition-colors"
+                    >
+                        Scan Next Guest
+                    </button>
+                </div>
+            )}
+
+            {status === 'wrong_date' && guestData && (
+                <div className="w-full max-w-sm bg-white p-6 rounded-3xl shadow-lg border border-yellow-200 text-center animate-in zoom-in-95">
+                    <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <AlertCircle className="w-10 h-10 text-yellow-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-900 mb-2">Wrong Date</h2>
+                    <p className="text-yellow-700 text-sm font-medium mb-6">This reservation is for a different day.</p>
+
+                    <div className="bg-yellow-50 rounded-2xl p-4 text-left mb-6 text-yellow-900 border border-yellow-100">
+                        <p className="text-sm font-bold">{guestData.full_name}</p>
+                        <p className="text-xs mt-1 mb-3">Table {guestData.table_number} • {guestData.guest_count} Guests</p>
+
+                        <div className="p-3 bg-white rounded-xl border border-yellow-200/60">
+                            <p className="text-[10px] font-black tracking-widest uppercase text-yellow-600/60 mb-1">Pass Valid For</p>
+                            <p className="font-bold text-yellow-800">
+                                {getRamadanDates().find(d => d.isoDate === guestData.reservation_date)?.label || guestData.reservation_date}
+                            </p>
+                        </div>
                     </div>
 
                     <button

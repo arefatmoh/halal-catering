@@ -1,16 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Minus, Plus, UploadCloud, ChevronLeft, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { getRamadanDates, getTodayRamadanDate } from '../lib/ramadan';
+import { getDailyIftarDates, getGrandIftarDates, getTodayRamadanDate } from '../lib/ramadan';
 
 const RegistrationPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const eventType = searchParams.get('type') === 'grand_iftar' ? 'grand_iftar' : 'iftar';
+    const isGrand = eventType === 'grand_iftar';
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [file, setFile] = useState<File | null>(null);
 
-    const ramadanDates = getRamadanDates();
+    const ramadanDates = isGrand ? getGrandIftarDates() : getDailyIftarDates();
     const todayRamadan = getTodayRamadanDate();
 
     const [formData, setFormData] = useState({
@@ -19,7 +23,7 @@ const RegistrationPage = () => {
         guestCount: 1,
         guestNames: [''] as string[],
         paymentMethod: 'CBE',
-        reservationDate: todayRamadan.isoDate,
+        reservationDate: ramadanDates.find(d => d.isoDate === todayRamadan.isoDate)?.isoDate || ramadanDates[0]?.isoDate || '',
     });
 
     const handleGuestCountChange = (increment: number) => {
@@ -58,6 +62,23 @@ const RegistrationPage = () => {
         setLoading(true);
 
         try {
+            // 0. Check capacity for the selected date (skip for Grand Iftar)
+            if (!isGrand) {
+                const { data: currentRegs, error: capacityError } = await supabase
+                    .from('registrations')
+                    .select('guest_count')
+                    .eq('reservation_date', formData.reservationDate)
+                    .neq('status', 'rejected');
+
+                if (capacityError) throw new Error('Could not verify availability.');
+
+                const totalBooked = currentRegs?.reduce((sum, reg) => sum + reg.guest_count, 0) || 0;
+                if (totalBooked + formData.guestCount > 400) {
+                    const spacesLeft = Math.max(0, 400 - totalBooked);
+                    throw new Error(`Sorry, we are fully booked for this date! Only ${spacesLeft} spots left.`);
+                }
+            }
+
             // 1. Upload the screenshot to Supabase Storage
             const fileExt = file.name.split('.').pop();
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
@@ -85,6 +106,7 @@ const RegistrationPage = () => {
                     payment_method: formData.paymentMethod,
                     screenshot_url: publicUrlData.publicUrl,
                     reservation_date: formData.reservationDate,
+                    event_type: eventType,
                     status: 'pending'
                 });
 
@@ -111,7 +133,7 @@ const RegistrationPage = () => {
                 >
                     <ChevronLeft className="w-6 h-6" />
                 </button>
-                <h1 className="text-xl font-bold text-slate-900 ml-2">Reservation</h1>
+                <h1 className="text-xl font-bold text-slate-900 ml-2">{isGrand ? 'Grand Iftar Registration' : 'Reservation'}</h1>
             </div>
 
             <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5">
@@ -232,6 +254,22 @@ const RegistrationPage = () => {
                         </select>
                     </div>
 
+                    {/* Pricing Summary */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-slate-600 font-medium">Per plate</span>
+                            <span className="text-sm font-bold text-slate-900 tabular-nums">2,900 ETB</span>
+                        </div>
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-slate-600 font-medium">Guests</span>
+                            <span className="text-sm font-bold text-slate-900">× {formData.guestCount}</span>
+                        </div>
+                        <div className="border-t border-slate-200 pt-2 mt-2 flex items-center justify-between">
+                            <span className="text-sm font-bold text-slate-900">Total</span>
+                            <span className="text-lg font-black text-primary-700 tabular-nums">{(2900 * formData.guestCount).toLocaleString()} ETB</span>
+                        </div>
+                    </div>
+
                     <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 animate-in fade-in slide-in-from-top-2 duration-300">
                         <p className="text-[10px] font-black text-primary-800 uppercase tracking-widest mb-1 opacity-60">Payment Account</p>
                         <div className="flex items-center justify-between">
@@ -243,7 +281,7 @@ const RegistrationPage = () => {
                             </span>
                         </div>
                         <p className="text-[10px] mt-2 font-medium text-primary-600/80">
-                            Please transfer the total amount and upload the screenshot below.
+                            Please transfer {(2900 * formData.guestCount).toLocaleString()} ETB and upload the screenshot below.
                         </p>
                     </div>
 
