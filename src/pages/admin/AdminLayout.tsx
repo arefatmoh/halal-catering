@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, ScanLine, Grid3X3, BarChart3, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, ScanLine, Grid3X3, BarChart3, LogOut, Bell, BellRing } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 const AdminLayout = () => {
     const navigate = useNavigate();
@@ -16,6 +18,82 @@ const AdminLayout = () => {
         { to: '/admin/analytics', icon: BarChart3, label: 'Reports' },
     ];
 
+    const [notificationsEnabled, setNotificationsEnabled] = useState(
+        'Notification' in window && Notification.permission === 'granted'
+    );
+
+    const playNotificationSound = () => {
+        try {
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioContext) return;
+            const audioCtx = new AudioContext();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+            oscillator.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1); // Up to A6
+
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.3);
+        } catch (e) {
+            console.error('Audio play failed', e);
+        }
+    };
+
+    const enableNotifications = async () => {
+        if (!('Notification' in window)) {
+            alert('This browser does not support desktop notifications.');
+            return;
+        }
+        if (Notification.permission !== 'granted') {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                setNotificationsEnabled(true);
+                new Notification('Notifications Enabled', {
+                    body: 'You will now receive alerts for new registrations.',
+                    icon: '/Logo.png'
+                });
+                playNotificationSound();
+            }
+        } else {
+            setNotificationsEnabled(true);
+            playNotificationSound();
+        }
+    };
+
+    useEffect(() => {
+        if (!notificationsEnabled) return;
+
+        const channel = supabase
+            .channel('global-registration-alerts')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'registrations' }, (payload) => {
+                const newReg = payload.new;
+                const title = `New ${newReg.event_type === 'grand_iftar' ? 'Grand Iftar' : 'Iftar'} Booking!`;
+                const body = `${newReg.full_name} registered for ${newReg.guest_count} guests.`;
+
+                if (Notification.permission === 'granted') {
+                    new Notification(title, {
+                        body: body,
+                        icon: '/Logo.png'
+                    });
+                }
+                playNotificationSound();
+            })
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [notificationsEnabled]);
+
     return (
         <div className="min-h-screen bg-slate-50 flex flex-col pt-4 pb-28 md:pb-6 font-sans">
 
@@ -30,12 +108,24 @@ const AdminLayout = () => {
                         <p className="text-[9px] font-bold text-primary-600 uppercase tracking-widest">Admin Panel</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleLogout}
-                    className="text-slate-400 hover:text-red-500 transition-all bg-white p-2.5 rounded-xl shadow-sm border border-slate-100 hover:border-red-100 hover:bg-red-50 active:scale-95"
-                >
-                    <LogOut className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={notificationsEnabled ? undefined : enableNotifications}
+                        className={`transition-all p-2.5 rounded-xl shadow-sm border ${notificationsEnabled
+                                ? 'bg-primary-50 border-primary-100 text-primary-600'
+                                : 'bg-white border-slate-100 text-slate-400 hover:border-primary-100 hover:text-primary-500'
+                            } active:scale-95`}
+                        title={notificationsEnabled ? 'Notifications Active' : 'Enable Notifications'}
+                    >
+                        {notificationsEnabled ? <BellRing className="w-4 h-4 animate-bounce" /> : <Bell className="w-4 h-4" />}
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="text-slate-400 hover:text-red-500 transition-all bg-white p-2.5 rounded-xl shadow-sm border border-slate-100 hover:border-red-100 hover:bg-red-50 active:scale-95"
+                    >
+                        <LogOut className="w-4 h-4" />
+                    </button>
+                </div>
             </header>
 
             {/* Main Content Area */}
