@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Eye, Check, X, Search, Loader2 } from 'lucide-react';
+import { Eye, Check, X, Search, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { sendSMS } from '../../lib/sms';
 import { v4 as uuidv4 } from 'uuid';
+import { getRamadanDates, getTodayRamadanDate, type RamadanDate } from '../../lib/ramadan';
 
 const RegistrationsPage = () => {
+    const ramadanDates = getRamadanDates();
+    const [selectedDate, setSelectedDate] = useState<RamadanDate>(getTodayRamadanDate());
+
     const [selectedReg, setSelectedReg] = useState<any>(null);
     const [registrations, setRegistrations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -25,20 +29,15 @@ const RegistrationsPage = () => {
         return () => {
             supabase.removeChannel(channel);
         };
-    }, []);
+    }, [selectedDate]);
 
     const fetchRegistrations = async () => {
         try {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
+            // Filter by selected reservation_date (the night the guest chose to attend)
             const { data, error } = await supabase
                 .from('registrations')
                 .select('*')
-                .gte('created_at', today.toISOString())
-                .lt('created_at', tomorrow.toISOString())
+                .eq('reservation_date', selectedDate.isoDate)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -157,9 +156,60 @@ const RegistrationsPage = () => {
         r.phone.includes(searchTerm)
     );
 
+    const currentIndex = ramadanDates.findIndex(d => d.isoDate === selectedDate.isoDate);
+    const todayRamadan = getTodayRamadanDate();
+
     return (
         <div className="space-y-4">
-            {/* Search Header */}
+
+            {/* Ramadan Date Navigator */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="flex items-center">
+                    <button
+                        onClick={() => currentIndex > 0 && setSelectedDate(ramadanDates[currentIndex - 1])}
+                        disabled={currentIndex === 0}
+                        className="p-4 text-slate-400 hover:text-slate-700 disabled:opacity-30 transition-colors"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex-1 text-center py-3">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Viewing Registrations For</p>
+                        <p className="text-base font-extrabold text-slate-900 leading-tight">{selectedDate.label}</p>
+                        {selectedDate.isoDate === todayRamadan.isoDate && (
+                            <span className="inline-block mt-1 text-[9px] font-black bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full uppercase tracking-widest">Today</span>
+                        )}
+                    </div>
+
+                    <button
+                        onClick={() => currentIndex < ramadanDates.length - 1 && setSelectedDate(ramadanDates[currentIndex + 1])}
+                        disabled={currentIndex === ramadanDates.length - 1}
+                        className="p-4 text-slate-400 hover:text-slate-700 disabled:opacity-30 transition-colors"
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+
+                {/* Quick jump to date pills */}
+                <div className="flex gap-1.5 overflow-x-auto px-3 pb-3 no-scrollbar">
+                    {ramadanDates.map(d => (
+                        <button
+                            key={d.isoDate}
+                            onClick={() => setSelectedDate(d)}
+                            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter transition-all ${d.isoDate === selectedDate.isoDate
+                                    ? 'bg-primary-600 text-white shadow-md shadow-primary-500/20'
+                                    : d.isoDate === todayRamadan.isoDate
+                                        ? 'bg-primary-50 text-primary-600 border border-primary-200'
+                                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                }`}
+                        >
+                            R{d.ramadanDay}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Search */}
             <div className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-3">
                 <Search className="w-5 h-5 text-slate-400 ml-2" />
                 <input

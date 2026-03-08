@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS public.registrations (
     qr_token UUID,
     table_number INTEGER REFERENCES public.tables(table_number),
     entered_count INTEGER NOT NULL DEFAULT 0,
+    reservation_date DATE, -- Ramadan night the guest selected (e.g. '2026-03-08' = Ramadan 19)
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 

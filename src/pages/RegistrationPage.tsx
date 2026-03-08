@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Minus, Plus, UploadCloud, ChevronLeft, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { getRamadanDates, getTodayRamadanDate } from '../lib/ramadan';
 
 const RegistrationPage = () => {
     const navigate = useNavigate();
@@ -9,12 +10,16 @@ const RegistrationPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [file, setFile] = useState<File | null>(null);
 
+    const ramadanDates = getRamadanDates();
+    const todayRamadan = getTodayRamadanDate();
+
     const [formData, setFormData] = useState({
         fullName: '',
         phone: '',
         guestCount: 1,
         guestNames: [''] as string[],
         paymentMethod: 'CBE',
+        reservationDate: todayRamadan.isoDate,
     });
 
     const handleGuestCountChange = (increment: number) => {
@@ -76,9 +81,10 @@ const RegistrationPage = () => {
                     full_name: formData.fullName,
                     phone: formData.phone,
                     guest_count: formData.guestCount,
-                    guest_names: formData.guestNames.slice(1), // Exclude main person if empty, or keep all depending on logic
+                    guest_names: formData.guestNames.slice(1),
                     payment_method: formData.paymentMethod,
                     screenshot_url: publicUrlData.publicUrl,
+                    reservation_date: formData.reservationDate,
                     status: 'pending'
                 });
 
@@ -140,6 +146,22 @@ const RegistrationPage = () => {
                             value={formData.phone}
                             onChange={e => setFormData({ ...formData, phone: e.target.value })}
                         />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-1">Attendance Date</label>
+                        <select
+                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition-all appearance-none font-medium text-slate-800"
+                            value={formData.reservationDate}
+                            onChange={e => setFormData({ ...formData, reservationDate: e.target.value })}
+                        >
+                            {ramadanDates.map(d => (
+                                <option key={d.isoDate} value={d.isoDate}>
+                                    {d.label}{d.isoDate === todayRamadan.isoDate ? '  ✦ Today' : ''}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-slate-400 mt-1.5 ml-1">Select the night you plan to attend</p>
                     </div>
                 </div>
 
